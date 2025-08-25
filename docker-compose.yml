@@ -1,0 +1,58 @@
+version: "3.9"
+
+networks:
+  idun_network:
+    driver: bridge
+    name: idun_network
+
+services:
+  traefik:
+    image: traefik:v3.5
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--entrypoints.web.address=:80"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - idun_network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: idun_manager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - idun_network
+
+  idun-agent-manager:
+    build:
+      context: .
+      dockerfile: services/idun_agent_manager/Dockerfile
+    environment:
+      IDUN_MANAGER_DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/idun_manager
+      IDUN_MANAGER_DOCKER_NETWORK: idun_network
+    depends_on:
+      - postgres
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.manager.rule=PathPrefix(`/api/v1`) || PathPrefix(`/docs`) || PathPrefix(`/openapi.json`)"
+      - "traefik.http.services.manager.loadbalancer.server.port=8002"
+    networks:
+      - idun_network
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+volumes:
+  pgdata:

@@ -182,7 +182,7 @@ Example `docker-compose.yml` to run the Gateway and a single Engine container. R
 version: "3.9"
 services:
   gateway:
-    image: traefik:v3.1
+    image: traefik:v3.5
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"

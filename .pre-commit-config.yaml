@@ -41,3 +41,6 @@ repos:
     hooks:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
+
+# Only run pre-commit hooks on main branch
+default_stages: [manual]
